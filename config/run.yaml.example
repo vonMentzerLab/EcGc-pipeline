@@ -1,0 +1,59 @@
+############################################################
+# INPUTS
+############################################################
+samples_tsv: config/samples.tsv
+genome_link_dir: work/genomes
+fa_suffix: .fa.gz
+gff3_suffix: .gff3
+
+############################################################
+# REFERENCES
+############################################################
+cf_reference_nt_db: references/baktamod_CFs_and_kappa_reference_db.fasta
+cf_reference_aa_db: references/baktamod_CFs_and_kappa_reference_db_translated.fasta
+cf_reference_dmnd: references/baktamod_CFs_and_kappa_reference_db_translated.dmnd
+cf_rules_table: references/cf_and_kappa_rules.tsv
+cf_lookup_table: references/cf_and_kappa_name_lookup.tsv
+bakta_db: /path/to/bakta_db
+
+############################################################
+# OUTPUT ROOTS
+############################################################
+bakta_outdir: results/bakta
+cds_features_outdir: results/cds_features
+cf_classification_outdir: results/cf_classification
+tmp_dir: results/tmp
+
+############################################################
+# THREADS / PARALLELISM
+############################################################
+bakta_threads: 8
+classification_threads: 8
+cores: 8
+
+############################################################
+# BAKTA PARAMS
+############################################################
+bakta_bin: bakta
+bakta_genus: Escherichia
+bakta_gram: "-"
+
+############################################################
+# Tools / executables leave as is if in PATH or point to full paths
+############################################################
+rscript_bin: Rscript
+diamond_bin: diamond
+
+############################################################
+# CF CLASSIFICATION PARAMS
+############################################################
+min_cov: 80
+min_pident: 80
+max_dist: 10000
+cf_classify_min_score_fraction: 0.95
+
+############################################################
+# OPTIONAL FASTA EXPORT
+############################################################
+output_gene_seqs: true
+output_operon_seqs: true
