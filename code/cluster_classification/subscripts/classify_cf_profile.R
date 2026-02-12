@@ -10,7 +10,10 @@ read_cf_rules <- function(cf_rules_path){
     mutate(cf_gene_order = row_number()) %>% 
     ungroup() %>% 
     mutate(gene = ifelse(str_detect(gene, ":"), gene, paste0(gene, ":", gene))) %>% 
-    separate(gene, sep = ":", into = c("equiv_gene", "gene")) %>% 
+    mutate(
+      equiv_gene = sub(":.*$", "", gene),
+      gene       = sub("^[^:]*:", "", gene)
+    ) %>% 
     mutate(gene = str_split(gene, ",")) %>% 
     unnest(gene)
 }

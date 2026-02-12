@@ -58,6 +58,7 @@ SAMPLE_LIST_STR = " ".join(SAMPLES)
 # pull config values
 ############################################
 GENOME_LINK_DIR = cfg.get("genome_link_dir")  # /work/genomes
+
 if not GENOME_LINK_DIR:
     sys.exit("ERROR: genome_link_dir is missing in config/run.yaml")
 
@@ -71,8 +72,8 @@ BAKTA_GRAM = cfg.get("bakta_gram", "-")
 BAKTA_BIN = cfg.get("bakta_bin", "bakta")
 
 # --- Tool binaries ---
-RSCRIPT_BIN = cfg.get("rscript_bin", "Rscript")
-DIAMOND_BIN = cfg.get("diamond_bin", "diamond")
+RSCRIPT_BIN = cfg["tools"]["rscript"]
+DIAMOND_BIN = cfg["tools"]["diamond"]
 
 # --- CF classification settings ---
 CF_AA_DB = cfg.get("cf_reference_aa_db")
@@ -91,7 +92,7 @@ CDS_BASE = cfg.get("cds_features_outdir", "results/cds_features")
 # expected per-sample outputs
 ############################################
 # Expected CDS output for all samples
-LINKED_FASTAS = [f"{GENOME_LINK_DIR}/{s}.fa.gz" for s in SAMPLES]
+LINKED_FASTAS = [f"{GENOME_LINK_DIR}/{s}.fa" for s in SAMPLES]
 
 # Bakta (or user-provided) GFF at standard location
 BAKTA_GFFS    = [f"{BAKTA_OUT}/{s}/{s}.gff3" for s in SAMPLES]
@@ -128,13 +129,13 @@ rule all:
 
 ############################################
 # 1) link_inputs:
-# make per-sample symlink from raw fasta -> {GENOME_LINK_DIR}/{sample}.fa.gz
+# make per-sample symlink from raw fasta -> {GENOME_LINK_DIR}/{sample}.fa
 ############################################
 rule link_inputs:
     input:
         src_fa = lambda wc: FA[wc.sample]
     output:
-        fa = f"{GENOME_LINK_DIR}" + "/{sample}.fa.gz"
+        fa = f"{GENOME_LINK_DIR}" + "/{sample}.fa"
     run:
         os.makedirs(GENOME_LINK_DIR, exist_ok=True)
         src_fa = os.path.abspath(input.src_fa)
@@ -291,7 +292,7 @@ rule classify_cf:
 
         # 3. Sanity check: make sure all per-sample classification tables were created
         for S in {SAMPLE_LIST_STR}; do
-            test -s "{CLASS_OUT}/${{S}}/cf_classification_min_classify_score_fraction_0.95.tsv"
+            test -f "{CLASS_OUT}/${{S}}/cf_classification_min_classify_score_fraction_0.95.tsv"
         done
         """
 

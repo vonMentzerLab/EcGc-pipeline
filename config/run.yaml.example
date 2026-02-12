@@ -18,6 +18,14 @@ cf_lookup_table: references/cf_and_kappa_name_lookup.tsv
 bakta_db: /path/to/bakta_db
 
 ############################################################
+# TOOLS
+############################################################
+tools:
+  rscript: ""
+  diamond: ""
+
+
+############################################################
 # OUTPUT ROOTS
 ############################################################
 bakta_outdir: results/bakta
@@ -42,12 +50,6 @@ bakta_genus: Escherichia
 bakta_gram: "-"
 
 ############################################################
-# Tools / executables leave as is if in PATH or point to full paths
-############################################################
-rscript_bin: Rscript
-diamond_bin: diamond
-
-############################################################
 # CF CLASSIFICATION PARAMS
 ############################################################
 min_cov: 80
@@ -56,7 +58,9 @@ max_dist: 10000
 cf_classify_min_score_fraction: 0.95
 
 ############################################################
-# OPTIONAL FASTA EXPORT
+# FASTA EXPORT PARAMS (OPTIONAL)
 ############################################################
-output_gene_seqs: true
-output_operon_seqs: true
+genome_seqs_dir: /work/genomes
+fa_suffix: ".fa"   # or ".fa.gz" if that’s what you actually have
+output_gene_seqs: false
+output_operon_seqs: false

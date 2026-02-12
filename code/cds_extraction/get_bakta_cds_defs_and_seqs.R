@@ -11,7 +11,8 @@ library(doParallel)
 library(yaml)
 
 load_fa_seqs <- function(fa_file){
-  Biostrings::getSeq(Rsamtools::FaFile(fa_file))
+  # readDNAStringSet can read both plain FASTA and gzipped FASTA
+  Biostrings::readDNAStringSet(fa_file)
 }
 
 make_bakta_contignames <- function(dnastringset){
@@ -40,7 +41,11 @@ dir.create(cds_coords_dir, recursive = TRUE, showWarnings = FALSE)
 ########################################
 # read samples.tsv robustly (tabs OR spaces)
 ########################################
-samples_path <- "config/samples.tsv"
+samples_path <- config$samples_tsv
+if (is.null(samples_path) || samples_path == "") {
+  stop("samples_tsv is missing in run.yaml")
+}
+
 lines <- readLines(samples_path)
 lines <- lines[grepl("\\S", lines)]
 split_lines <- strsplit(lines, "[[:space:]]+")
@@ -78,14 +83,10 @@ silence <- foreach(
   # paths for THIS sample produced by Snakefile rules
   gff_path <- file.path(config$bakta_outdir, genome_id, paste0(genome_id, config$gff3_suffix))
 
-  # FASTA can be either .fa.gz or .fa (we prefer .fa.gz if both exist)
-  fa_gz <- file.path(config$genome_link_dir, paste0(genome_id, ".fa.gz"))
-  fa_fa <- file.path(config$genome_link_dir, paste0(genome_id, ".fa"))
-
-  fa_path <- if (file.exists(fa_gz)) fa_gz else fa_fa
+    # FASTA path produced by Snakefile (standardized name)
+  fa_path <- file.path(config$genome_link_dir, paste0(genome_id, ".fa"))
   if (!file.exists(fa_path)) {
-    stop("FASTA not found for sample ", genome_id,
-       ". Expected one of: ", fa_gz, " or ", fa_fa)
+    stop("FASTA not found for sample ", genome_id, ". Expected: ", fa_path)
   }
   
   # load CDS features from Bakta GFF
@@ -141,3 +142,5 @@ silence <- foreach(
 }
 
 message("CDS extraction finished.")
+
+stopCluster(cl)
