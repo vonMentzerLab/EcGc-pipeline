@@ -22,6 +22,12 @@ make_bakta_contignames <- function(dnastringset){
 args <- commandArgs(trailingOnly = TRUE)
 config <- read_yaml(args[1])
 
+# Backwards/forwards compatible config keys
+if (is.null(config$genome_link_dir) && !is.null(config$genome_seqs_dir)) {
+  config$genome_link_dir <- config$genome_seqs_dir
+}
+if (is.null(config$gff3_suffix)) config$gff3_suffix <- ".gff3"
+
 # output dirs from config
 nucl_dir        <- file.path(config$cds_features_outdir, "cds_nucl_seqs")
 prot_dir        <- file.path(config$cds_features_outdir, "cds_amino_seqs")
@@ -71,8 +77,17 @@ silence <- foreach(
 
   # paths for THIS sample produced by Snakefile rules
   gff_path <- file.path(config$bakta_outdir, genome_id, paste0(genome_id, config$gff3_suffix))
-  fa_path  <- file.path(config$genome_seqs_dir, paste0(genome_id, config$fa_suffix))
 
+  # FASTA can be either .fa.gz or .fa (we prefer .fa.gz if both exist)
+  fa_gz <- file.path(config$genome_link_dir, paste0(genome_id, ".fa.gz"))
+  fa_fa <- file.path(config$genome_link_dir, paste0(genome_id, ".fa"))
+
+  fa_path <- if (file.exists(fa_gz)) fa_gz else fa_fa
+  if (!file.exists(fa_path)) {
+    stop("FASTA not found for sample ", genome_id,
+       ". Expected one of: ", fa_gz, " or ", fa_fa)
+  }
+  
   # load CDS features from Bakta GFF
   cds <- rtracklayer::import.gff3(gff_path) %>%
     dplyr::filter(type == "CDS") %>%

@@ -61,7 +61,6 @@ GENOME_LINK_DIR = cfg.get("genome_link_dir")  # /work/genomes
 if not GENOME_LINK_DIR:
     sys.exit("ERROR: genome_link_dir is missing in config/run.yaml")
 
-
 # --- Bakta settings ---
 BAKTA_PATH = cfg.get("bakta_path", "")
 BAKTA_DB = cfg.get("bakta_db")

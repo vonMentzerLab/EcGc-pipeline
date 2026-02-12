@@ -2,9 +2,10 @@
 # INPUTS
 ############################################################
 samples_tsv: config/samples.tsv
+
+# Working directory where the pipeline will create symlinks named <sample>.fa.gz
+# (This is NOT where your original genomes must live; those paths go in samples.tsv)
 genome_link_dir: work/genomes
-fa_suffix: .fa.gz
-gff3_suffix: .gff3
 
 ############################################################
 # REFERENCES
@@ -34,6 +35,8 @@ cores: 8
 ############################################################
 # BAKTA PARAMS
 ############################################################
+# if Bakta is not in PATH, you can prepend a PATH here (optional)
+bakta_path: ""
 bakta_bin: bakta
 bakta_genus: Escherichia
 bakta_gram: "-"
