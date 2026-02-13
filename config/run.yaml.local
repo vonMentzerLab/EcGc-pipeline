@@ -1,0 +1,64 @@
+############################################################
+# INPUTS
+############################################################
+samples_tsv: config/samples.tsv
+#genome_seqs_dir: /storage_i/mentzerv/ecgc_run1/work/genomes
+#fa_suffix: .fa.gz
+#gff3_suffix: .gff3
+genome_link_dir: work/genomes
+
+############################################################
+# REFERENCES
+############################################################
+cf_reference_nt_db: references/baktamod_CFs_and_kappa_reference_db.fasta
+cf_reference_aa_db: references/baktamod_CFs_and_kappa_reference_db_translated.fasta
+cf_reference_dmnd: references/baktamod_CFs_and_kappa_reference_db_translated.dmnd
+cf_rules_table: references/cf_and_kappa_rules.tsv
+cf_lookup_table: references/cf_and_kappa_name_lookup.tsv
+bakta_db: /storage_i/mentzerv/bakta_db/db
+
+############################################################
+# TOOLS
+############################################################
+tools:
+  rscript: /home/mentzerv/miniforge3/envs/cf_classification_test/bin/Rscript
+  diamond: /home/mentzerv/miniforge3/envs/cf_classification_test/bin/diamond
+
+############################################################
+# OUTPUT ROOTS
+############################################################
+bakta_outdir: /storage_i/mentzerv/ecgc_run1/results/bakta
+cds_features_outdir: /storage_i/mentzerv/ecgc_run1/results/cds_features
+cf_classification_outdir: /storage_i/mentzerv/ecgc_run1/results/cf_classification
+tmp_dir: /storage_i/mentzerv/ecgc_run1/results/tmp
+
+############################################################
+# THREADS / PARALLELISM
+############################################################
+bakta_threads: 8
+classification_threads: 8
+cores: 8
+
+############################################################
+# BAKTA PARAMS
+############################################################
+bakta_bin: /home/mentzerv/miniforge3/envs/bakta_run/bin/bakta
+bakta_path: /home/mentzerv/miniforge3/envs/bakta_run/bin
+bakta_genus: Escherichia
+bakta_gram: "-"
+
+############################################################
+# CF CLASSIFICATION PARAMS
+############################################################
+min_cov: 80
+min_pident: 80
+max_dist: 10000
+cf_classify_min_score_fraction: 0.95
+
+############################################################
+# FASTA EXPORT PARAMS (OPTIONAL)
+############################################################
+genome_seqs_dir: /storage_i/mentzerv/ecgc_run1/work/genomes
+fa_suffix: ".fa"   # or ".fa.gz" if that’s what you actually have
+output_gene_seqs: false
+output_operon_seqs: false   # or true

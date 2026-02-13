@@ -115,6 +115,8 @@ FINAL_CLASS_TSV = [
     for s in SAMPLES
 ]
 
+RUN_SUMMARY_TSV = f"{CLASS_OUT}/ecgc_run_summary.tsv"
+
 ############################################
 # rule all: what a full run produces
 ############################################
@@ -124,7 +126,8 @@ rule all:
         BAKTA_GFFS,
         ALL_CDS_OUTPUTS,
         DIAMOND_OUT,
-        FINAL_CLASS_TSV
+        FINAL_CLASS_TSV,
+        RUN_SUMMARY_TSV
 
 
 ############################################
@@ -254,7 +257,7 @@ rule diamond_search_all:
 
         # sanity check: make sure all expected outputs exist & non-empty
         for S in {SAMPLE_LIST_STR}; do
-            test -s "{TMP_DIR}/diamond_aligned_amino_cf_db/diamond_align_${{S}}.tsv"
+            test -f "{TMP_DIR}/diamond_aligned_amino_cf_db/diamond_align_${{S}}.tsv"
         done
         """
 
@@ -273,7 +276,8 @@ rule classify_cf:
         rules_tsv = CF_RULES,
         lookup_tsv = CF_LOOKUP
     output:
-        FINAL_CLASS_TSV
+        FINAL_CLASS_TSV,
+        RUN_SUMMARY_TSV
     threads: CLASS_THREADS
     shell:
         r"""
@@ -294,6 +298,14 @@ rule classify_cf:
         for S in {SAMPLE_LIST_STR}; do
             test -f "{CLASS_OUT}/${{S}}/cf_classification_min_classify_score_fraction_0.95.tsv"
         done
+
+        # 4. Run-level summary across all genomes
+        {RSCRIPT_BIN} \
+        code/cluster_classification/subscripts/make_ecgc_run_summary.R \
+        {RUNCFG}
+
+        # sanity check: summary exists
+        test -s "{CLASS_OUT}/ecgc_run_summary.tsv"
         """
 
     

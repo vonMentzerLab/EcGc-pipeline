@@ -395,6 +395,24 @@ cf_req_gene_counts <- get_cf_required_gene_counts(cf_rules)
 
 files <- list.files(config$cf_filtered_cds_coords_dir)
 
+# ---- define the full genome list from samples.tsv (NOT from files present) ----
+if (is.null(config$samples_tsv) || config$samples_tsv == "") {
+  stop("samples_tsv is missing in run.yaml")
+}
+samples_path <- config$samples_tsv
+lines <- readLines(samples_path)
+lines <- lines[grepl("\\S", lines)]
+split_lines <- strsplit(lines, "[[:space:]]+")
+header <- split_lines[[1]]
+rows <- split_lines[-1]
+
+samples_df <- as.data.frame(do.call(rbind, rows), stringsAsFactors = FALSE)
+colnames(samples_df) <- header
+
+if (!("sample" %in% colnames(samples_df))) stop("samples.tsv must have a column called 'sample'")
+
+all_genomes <- unique(samples_df$sample)
+
 comb <- function(x, y){
   list(
     cf_classification         = bind_rows(x[[1]], y[[1]]),
@@ -414,7 +432,6 @@ results <- foreach(
   .inorder = FALSE,
   .packages = c("tidyverse")
 ) %dopar% {
-
   file <- files[i]
 
   cf_coords <- read_tsv(file.path(config$cf_filtered_cds_coords_dir, file))
@@ -428,38 +445,61 @@ results <- foreach(
   )
 
   prob_cf_coords <- find_prob_cf_coords(cf_coords)
-
   df <- make_cf_score_df(prob_cf_coords)
 
   classify_cfs(df, config$cf_classify_min_score_fraction)
 }
 
-# now write outputs PER GENOME inside cf_classification_outdir/<genome_id>
-# we'll split the big result list by genome and write to subdirs
-dir.create(config$out_base, recursive = TRUE, showWarnings = FALSE)
+# expected column sets (so empty outputs still have headers)
+cols_cf_classification <- c(
+  "genome_id","operon_id","cf_classification","gene_profile","mean_score_fraction",
+  "best_operon_cf_match","best_operon_cf_match_mean_score_fraction",
+  "operon_gene_count","best_operon_cf_match_gene_count","req_gene_count_in_cf_rules",
+  "best_operon_cf_match_all_genes_present","best_operon_cf_match_genes_in_order",
+  "best_operon_cf_match_all_genes_and_ordered",
+  "seqnames","start","end","strand"
+)
 
-# derive genome IDs from filenames like "cds_around_cf_<genome>.tsv.gz"
-all_genomes <- files %>%
-  sub("^cds_around_cf_", "", .) %>%
-  sub("\\.tsv\\.gz$", "", .) %>%
-  unique()
+cols_by_gene <- c(
+  "seqnames","start","end","strand",
+  "genome_id","operon_id","operon_strand","my_cds_id",
+  "best_operon_cf_match","cf","gene","score_fraction",
+  "score","max_score","pid","gene_order"
+)
+
+cols_best_any <- c(
+  "seqnames","start","end","strand",
+  "genome_id","operon_id","operon_strand","my_cds_id",
+  "cf","gene","score_fraction",
+  "score","max_score","pid","gene_order"
+)
+
+empty_with_cols <- function(cols){
+  as_tibble(setNames(replicate(length(cols), logical(0), simplify = FALSE), cols))
+}
 
 for (g in all_genomes) {
   out_dir_g <- file.path(config$out_base, g)
   dir.create(out_dir_g, recursive = TRUE, showWarnings = FALSE)
 
+  cf_tbl <- results$cf_classification %>% filter(genome_id == g)
+  if (nrow(cf_tbl) == 0) cf_tbl <- empty_with_cols(cols_cf_classification)
   write_tsv(
-    results$cf_classification %>% filter(genome_id == g),
+    cf_tbl,
     file.path(out_dir_g, paste0("cf_classification_min_classify_score_fraction_", config$cf_classify_min_score_fraction, ".tsv"))
   )
 
+  bg_tbl <- results$classifications_by_gene %>% filter(genome_id == g)
+  if (nrow(bg_tbl) == 0) bg_tbl <- empty_with_cols(cols_by_gene)
   write_tsv(
-    results$classifications_by_gene %>% filter(genome_id == g),
+    bg_tbl,
     file.path(out_dir_g, paste0("classifications_by_gene_min_classify_score_fraction_", config$cf_classify_min_score_fraction, ".tsv"))
   )
 
+  best_tbl <- results$best_matching_gene_any_cf %>% filter(genome_id == g)
+  if (nrow(best_tbl) == 0) best_tbl <- empty_with_cols(cols_best_any)
   write_tsv(
-    results$best_matching_gene_any_cf %>% filter(genome_id == g),
+    best_tbl,
     file.path(out_dir_g, "best_matching_gene_any_cf.tsv")
   )
 }
