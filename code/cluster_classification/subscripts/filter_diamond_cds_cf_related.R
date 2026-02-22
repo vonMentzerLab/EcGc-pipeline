@@ -55,7 +55,11 @@ config$nucl_seqs_dir <- file.path(config$cds_features_dir, "cds_nucl_seqs")
 dir.create(config$cf_filtered_cds_coords_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(config$global_alignment_scores_dir, recursive = TRUE, showWarnings = FALSE)
 
-files <- list.files(config$diamond_prot_dir)
+files <- list.files(
+  config$diamond_prot_dir,
+  pattern = "^diamond_align_.*\\.tsv$",
+  full.names = FALSE
+)
 
 # load AA reference sequences directly from provided translated DB
 CF_reference_aa_seqs <- Biostrings::readAAStringSet(config$clustered_genes_reference_db_aa_seq) 
@@ -117,10 +121,22 @@ silence <- foreach(
   }
 
   # Get genome_id so that we can load the cds features file
-  genome_id <- dmd_qseqid_filtered %>% 
-    tidyr::separate(qseqid, into = c('genome_id', 'cds_id'), sep = '\\.', remove = FALSE) %>% 
-    dplyr::pull(genome_id) %>% 
+  # qseqid looks like: <genome_id>.<cds_id>
+  # BUT genome_id itself can contain dots (e.g. GCA_050609225.1),
+  # so we must split at the LAST dot.
+  genome_id <- dmd_qseqid_filtered %>%
+    dplyr::mutate(
+      genome_id = sub("\\.[^.]+$", "", qseqid),  # everything before last dot
+      cds_id    = sub("^.*\\.", "", qseqid)      # everything after last dot
+    ) %>%
+    dplyr::pull(genome_id) %>%
     unique()
+
+  if (length(genome_id) != 1) {
+    warning("Skipping file (could not get a single genome_id): ", dmd_path,
+            " genome_ids=", paste(genome_id, collapse = ", "))
+    return(NULL)
+  } 
 
   cds_features <- readr::read_tsv(
     file.path(config$cds_coords_dir, paste0("cds_features_", genome_id, ".tsv.gz")),
@@ -222,4 +238,5 @@ if (length(aa_seqs) == 0) {
   NULL
 }
 
+stopCluster(cl)
 cat("Done!\n")

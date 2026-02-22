@@ -482,25 +482,28 @@ for (g in all_genomes) {
   out_dir_g <- file.path(config$out_base, g)
   dir.create(out_dir_g, recursive = TRUE, showWarnings = FALSE)
 
+  # 1) operon-level CF calls
   cf_tbl <- results$cf_classification %>% filter(genome_id == g)
   if (nrow(cf_tbl) == 0) cf_tbl <- empty_with_cols(cols_cf_classification)
   write_tsv(
     cf_tbl,
-    file.path(out_dir_g, paste0("cf_classification_min_classify_score_fraction_", config$cf_classify_min_score_fraction, ".tsv"))
+    file.path(out_dir_g, paste0("operon_cf_calls_min_score_fraction_", config$cf_classify_min_score_fraction, ".tsv"))
   )
 
+  # 2) gene-level calls (CF-aware)
   bg_tbl <- results$classifications_by_gene %>% filter(genome_id == g)
   if (nrow(bg_tbl) == 0) bg_tbl <- empty_with_cols(cols_by_gene)
   write_tsv(
     bg_tbl,
-    file.path(out_dir_g, paste0("classifications_by_gene_min_classify_score_fraction_", config$cf_classify_min_score_fraction, ".tsv"))
+    file.path(out_dir_g, paste0("gene_calls_cf_aware_min_score_fraction_", config$cf_classify_min_score_fraction, ".tsv"))
   )
 
+  # 3) best hit per gene (ignores CF consistency)
   best_tbl <- results$best_matching_gene_any_cf %>% filter(genome_id == g)
   if (nrow(best_tbl) == 0) best_tbl <- empty_with_cols(cols_best_any)
   write_tsv(
     best_tbl,
-    file.path(out_dir_g, "best_matching_gene_any_cf.tsv")
+    file.path(out_dir_g, "gene_best_hit_any_cf.tsv")
   )
 }
 

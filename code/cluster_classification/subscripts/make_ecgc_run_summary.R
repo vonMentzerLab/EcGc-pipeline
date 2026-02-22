@@ -18,8 +18,16 @@ read_samples <- function(samples_path){
 
   df <- as.data.frame(do.call(rbind, rows), stringsAsFactors = FALSE)
   colnames(df) <- header
+  colnames(df) <- tolower(colnames(df))
 
   if (!("sample" %in% colnames(df))) stop("samples.tsv must have a column called 'sample'")
+
+  # fail fast on duplicate sample IDs
+  dups <- df$sample[duplicated(df$sample)]
+  if (length(dups) > 0) {
+    stop("Duplicate sample IDs in samples.tsv: ", paste(unique(dups), collapse = ", "))
+  }
+
   df
 }
 
@@ -77,7 +85,8 @@ summary_df <- purrr::map_dfr(genomes, function(g){
   diamond_path <- file.path(diamond_dir, paste0("diamond_align_", g, ".tsv"))
   n_diamond_passing <- count_diamond_passing(diamond_path, min_cov, min_pident)
 
-  cf_path <- file.path(out_base, g, paste0("cf_classification_min_classify_score_fraction_", min_score, ".tsv"))
+  # count operon calls (this file *does* exist in your pipeline)
+  cf_path <- file.path(out_base, g, paste0("operon_cf_calls_min_score_fraction_", min_score, ".tsv"))
   cf_rows <- count_rows_minus_header(cf_path)
   cf_operons_called <- ifelse(is.na(cf_rows), NA_integer_, cf_rows)
 

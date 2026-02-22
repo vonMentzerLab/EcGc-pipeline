@@ -3,6 +3,8 @@
 import os, sys, yaml, re
 from snakemake.shell import shell
 
+print("SNAKEMAKE CWD:", os.getcwd())
+
 RUNCFG = "config/run.yaml"
 
 with open(RUNCFG) as f:
@@ -50,6 +52,11 @@ for row in rows:
     if has_gff:
         gff_path = row[gff_idx]
         GFF[sid] = gff_path
+
+# ---- fail fast on duplicate sample IDs ----
+dups = sorted({s for s in SAMPLES if SAMPLES.count(s) > 1})
+if dups:
+    sys.exit("ERROR: duplicate sample IDs in samples.tsv: " + ", ".join(dups))
 
 HAS_GFF = has_gff  # expose this for downstream logic
 SAMPLE_LIST_STR = " ".join(SAMPLES)
@@ -109,13 +116,26 @@ DIAMOND_OUT = [
     for s in SAMPLES
 ]
 
-# final classification table per sample
-FINAL_CLASS_TSV = [
-    f"{CLASS_OUT}/{s}/cf_classification_min_classify_score_fraction_0.95.tsv"
+# final outputs per sample (3 tables)
+FINAL_OPERON_TSV = [
+    f"{CLASS_OUT}/{s}/operon_cf_calls_min_score_fraction_0.95.tsv"
+    for s in SAMPLES
+]
+
+FINAL_GENE_CALLS_TSV = [
+    f"{CLASS_OUT}/{s}/gene_calls_cf_aware_min_score_fraction_0.95.tsv"
+    for s in SAMPLES
+]
+
+FINAL_GENE_BESTHIT_TSV = [
+    f"{CLASS_OUT}/{s}/gene_best_hit_any_cf.tsv"
     for s in SAMPLES
 ]
 
 RUN_SUMMARY_TSV = f"{CLASS_OUT}/ecgc_run_summary.tsv"
+
+# all final per-sample outputs (3 tables per genome)
+FINAL_OUTPUTS = FINAL_OPERON_TSV + FINAL_GENE_CALLS_TSV + FINAL_GENE_BESTHIT_TSV
 
 ############################################
 # rule all: what a full run produces
@@ -126,7 +146,7 @@ rule all:
         BAKTA_GFFS,
         ALL_CDS_OUTPUTS,
         DIAMOND_OUT,
-        FINAL_CLASS_TSV,
+        FINAL_OUTPUTS,
         RUN_SUMMARY_TSV
 
 
@@ -276,7 +296,7 @@ rule classify_cf:
         rules_tsv = CF_RULES,
         lookup_tsv = CF_LOOKUP
     output:
-        FINAL_CLASS_TSV,
+        FINAL_OUTPUTS,
         RUN_SUMMARY_TSV
     threads: CLASS_THREADS
     shell:
@@ -296,7 +316,9 @@ rule classify_cf:
 
         # 3. Sanity check: make sure all per-sample classification tables were created
         for S in {SAMPLE_LIST_STR}; do
-            test -f "{CLASS_OUT}/${{S}}/cf_classification_min_classify_score_fraction_0.95.tsv"
+            test -f "{CLASS_OUT}/${{S}}/operon_cf_calls_min_score_fraction_0.95.tsv"
+            test -f "{CLASS_OUT}/${{S}}/gene_calls_cf_aware_min_score_fraction_0.95.tsv"
+            test -f "{CLASS_OUT}/${{S}}/gene_best_hit_any_cf.tsv"
         done
 
         # 4. Run-level summary across all genomes
