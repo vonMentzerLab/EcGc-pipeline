@@ -1,9 +1,9 @@
 short_name	name
-cfaA	CFA/I_CfaA_chaperone
-cfaB	CFA/I_CfaB_major_subunit
-cfaC	CFA/I_CfaC_outer_membrane_usher
-cfaE	CFA/I_CfaE_minor_subunit
-cfaD	CFA/I_CfaD_truncated_regulator
+cfaA	CFA_I_CfaA_chaperone
+cfaB	CFA_I_CfaB_major_subunit
+cfaC	CFA_I_CfaC_outer_membrane_usher
+cfaE	CFA_I_CfaE_minor_subunit
+cfaD	CFA_I_CfaD_truncated_regulator
 cooB	CS1_CooB_chaperone
 cooA	CS1_CooA_major_subunit
 cooC	CS1_CooC_outer_membrane_usher
